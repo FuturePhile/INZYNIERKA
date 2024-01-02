@@ -1,0 +1,11 @@
+../Core/Src/HD44780.c:32:13:lcd_write_nibble	32	static
+../Core/Src/HD44780.c:44:6:lcd_send_cmd	24	static
+../Core/Src/HD44780.c:56:6:lcd_send_data	24	static
+../Core/Src/HD44780.c:64:6:lcd_init	8	static
+../Core/Src/HD44780.c:81:6:lcd_write_string	16	static
+../Core/Src/HD44780.c:89:6:lcd_set_cursor	24	static
+../Core/Src/HD44780.c:107:6:lcd_clear	8	static
+../Core/Src/HD44780.c:113:6:lcd_backlight	16	static
+../Core/Src/HD44780.c:124:6:init_lcd_check_door	16	static
+../Core/Src/HD44780.c:136:6:lcd_check_door	16	static
+../Core/Src/HD44780.c:163:6:lcd_check_telephone	16	static
