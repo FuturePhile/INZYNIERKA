@@ -6,6 +6,7 @@
  */
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include "HD44780.h"
 #include "i2c.h"
 
@@ -28,6 +29,7 @@ static uint8_t backlight_state = 1;
 
 static GPIO_PinState previous_state = GPIO_PIN_RESET;
 static bool previous_state_telephone = true;
+//static bool previous_state_key = false;
 
 static void lcd_write_nibble(uint8_t nibble, uint8_t rs)
 {
@@ -182,5 +184,43 @@ void lcd_check_telephone(bool current_state_telephone)
 			lcd_write_string(telephone_set);
 		}
 		previous_state_telephone = current_state_telephone;
+	}
+}
+bool lcd_display_key(char *key_buffer, bool current_state_key)
+{
+	static char *clear = "     ";
+
+	if(current_state_key == true)
+	{
+		lcd_set_cursor(1,11);
+		lcd_write_string(clear);
+		lcd_set_cursor(1, 11);
+		lcd_write_string(key_buffer);
+		current_state_key = false;
+	}
+	return current_state_key;
+}
+
+void lcd_check_key(char *key_buffer, char *access_key)
+{
+	static char *clear = "                ";
+	static char *good = "Klucz poprawny";
+	static char *bad = "Zly klucz";
+
+	if(strlen(key_buffer) == 4)
+	{
+		if(strcmp(key_buffer, access_key) == 0)
+			{
+				lcd_set_cursor(1, 0);
+				lcd_write_string(clear);
+				lcd_set_cursor(1, 0);
+				lcd_write_string(good);
+			} else
+			{
+				lcd_set_cursor(1, 0);
+				lcd_write_string(clear);
+				lcd_set_cursor(1, 0);
+				lcd_write_string(bad);
+			}
 	}
 }

@@ -23,3 +23,5 @@ void lcd_backlight(uint8_t state);
 void init_lcd_check_door(void);
 void lcd_check_door(void);
 void lcd_check_telephone(bool current_state_telephone);
+bool lcd_display_key(char *key_buffer, bool current_state_key);
+void lcd_check_key(char *key_buffer, char *access_key);

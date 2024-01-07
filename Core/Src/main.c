@@ -64,28 +64,37 @@ void SystemClock_Config(void);
 #define LINE_MAX_LENGTH 80
 #define PREFIX_LENGTH 5
 #define TIMEOUT_MS 50
+#define BUFFER_SIZE 5
+
 static char line_buffer_debug[LINE_MAX_LENGTH + 1];
 static char line_buffer_debug_GSM[LINE_MAX_LENGTH + 1];
 static char line_buffer_debug_BLE[LINE_MAX_LENGTH + 1];
 static char line_buffer_bluetooth[LINE_MAX_LENGTH + 1];
 static char line_buffer_gsm[LINE_MAX_LENGTH + 1];
+
 static uint32_t line_lenght_debug;
 static uint32_t line_lenght_debug_BLE;
 static uint32_t line_lenght_debug_GSM;
 static uint32_t line_lenght_bluetooth;
 static uint32_t line_lenght_gsm;
+
 bool if_send_end_line = false;
 bool if_phone_number_set = false;
 bool if_phone_number_set_latch = false;
 bool can_send_sms = false;
 bool if_door_open;
+bool if_key_pressed = false;
+
 uint32_t last_byte_time = 0;
 uint32_t last_command_time = 0;
+
 char phone_number[10];
 char access_key[5];
+char key_buffer[5];
 
 void send_SMS(void);
 void delay(uint32_t iterations);
+void add_digit(char digit);
 
 void line_append_debug(uint8_t value)
 {
@@ -244,7 +253,7 @@ void send_SMS(void)
 {
 	static char message_cmgf[] = "AT+CMGF=1\r";
 	static char message_cscs[] = "AT+CSCS=\"GSM\"\r";
-	char message_cmgs[31];
+	static char message_cmgs[31];
 	sprintf(message_cmgs, "AT+CMGS=\"+48%s\"\r", phone_number);
 	access_key_draw();
 	static char message_message[34];
@@ -280,11 +289,23 @@ void send_SMS(void)
 	}
 }
 
+void send_AT_init(void)
+{
+	static char AT_init[] = "AT\r\n";
+
+	HAL_UART_Transmit_IT(&huart1, (uint8_t*)AT_init, strlen(AT_init));
+	HAL_UART_Transmit_IT(&huart2, (uint8_t*)AT_init, strlen(AT_init));
+	HAL_UART_Transmit_IT(&huart3, (uint8_t*)AT_init, strlen(AT_init));
+}
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart == &huart1)
 	{
-		send_SMS();
+		if(if_phone_number_set_latch == true)
+		{
+			send_SMS();
+		}
 	}
 	if(huart == &huart2)
 	{
@@ -295,12 +316,12 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 GPIO_InitTypeDef GPIO_InitStructPrivate = {0};
 uint32_t previousMillis = 0;
 uint32_t currentMillis = 0;
-volatile uint8_t pressed_key = 0;
+volatile uint8_t pressed_key = '\0';
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
 	currentMillis = HAL_GetTick();
-	if(currentMillis - previousMillis > 10)
+	if(currentMillis - previousMillis > 200 )
 	{
 		GPIO_InitStructPrivate.Pin = COL_1_Pin|COL_2_Pin|COL_3_Pin|COL_4_Pin;
 		GPIO_InitStructPrivate.Mode = GPIO_MODE_INPUT;
@@ -387,8 +408,35 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		  GPIO_InitStructPrivate.Mode = GPIO_MODE_IT_RISING;
 		  GPIO_InitStructPrivate.Pull = GPIO_PULLDOWN;
 		  HAL_GPIO_Init(COL_1_GPIO_Port, &GPIO_InitStructPrivate);
+
+		  if((pressed_key == '1'|| pressed_key == '2'|| pressed_key == '3'|| pressed_key == '4'|| pressed_key == '5'|| pressed_key == '6'|| pressed_key == '7'|| pressed_key == '8'|| pressed_key == '9'|| pressed_key == '0') && if_phone_number_set_latch == true)
+		  		  {
+		  			  char pressed_digit = pressed_key;
+		  			  add_digit(pressed_digit);
+		  			  pressed_key = '\0';
+		  			  if_key_pressed = true;
+		  		  }
+
 		  previousMillis = currentMillis;
+
 	}
+}
+
+int current_index = 0;
+
+void add_digit(char digit)
+{
+	if(current_index < BUFFER_SIZE - 1)
+	{
+		key_buffer[current_index++] = digit;
+		key_buffer[current_index] = '\0';
+	}
+}
+
+void reset_buffer()
+{
+	memset(key_buffer, 0, BUFFER_SIZE);
+	current_index = 0;
 }
 
 void delay(uint32_t iterations)
@@ -442,8 +490,12 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   lcd_init();
+  send_AT_init();
+
   lcd_backlight(1);
   lcd_clear();
+
+  memset(key_buffer, '\0', BUFFER_SIZE);
 
   init_lcd_check_door();
 
@@ -455,11 +507,18 @@ int main(void)
   HAL_UART_Receive_IT(&huart2, &uart2_rx_buffer, 1);
   HAL_UART_Receive_IT(&huart1, &uart1_rx_buffer, 1);
   HAL_UART_Receive_IT(&huart3, &uart3_rx_buffer, 1);
+
   while (1)
   {
 	  check_timeout_gsm();
 	  lcd_check_door();
 	  lcd_check_telephone(if_phone_number_set_latch);
+	  if_key_pressed = lcd_display_key(key_buffer, if_key_pressed);
+	  lcd_check_key(key_buffer, access_key);
+	  if(HAL_GPIO_ReadPin(USER_BUTTON_GPIO_Port, USER_BUTTON_Pin) == GPIO_PIN_RESET)
+	  {
+		  reset_buffer();
+	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
