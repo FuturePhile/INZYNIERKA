@@ -10,6 +10,7 @@
 #include "HD44780.h"
 #include "i2c.h"
 #include "main.h"
+#include "tim.h"
 
 #define I2C_ADDR 0x27
 
@@ -135,6 +136,7 @@ typedef enum{
 	LCD_7,
 	LCD_8,
 	RST,
+	DOOR,
 	DONE
 }lcd_state;
 
@@ -154,7 +156,6 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 	static char *lock = "Zablokuj";
 	static char *reset = "Zresetuj";
 	static char *clear_line = "                ";
-//	static char *clear_key = "    ";
 
 	static bool if_key_correct = false;
 	static bool if_key_entered = false;
@@ -162,7 +163,7 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 	static bool cmd_2 = false;
 	static bool cmd_3 = false;
 
-
+//	if(HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin) == GPIO_PIN_RESET)
 	if(current_state_telephone != previous_state_telephone)
 	{
 		if(current_state_telephone == false)
@@ -356,6 +357,8 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		break;
 	case RST:
 		NVIC_SystemReset();
+		break;
+	case DOOR:
 		break;
 	default:
 		break;

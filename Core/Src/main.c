@@ -21,6 +21,7 @@
 #include "i2c.h"
 #include "rng.h"
 #include "rtc.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -494,22 +495,23 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_I2C1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 
+  HAL_GPIO_WritePin(MODEM_ENABLE_GPIO_Port, MODEM_ENABLE_Pin, GPIO_PIN_SET);
+  HAL_Delay(1000);
 
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
   lcd_init();
   send_AT_init();
 
   lcd_backlight(1);
   lcd_clear();
 
-  memset(key_buffer, '\0', BUFFER_SIZE);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1600);
+//  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
 
-//  init_lcd_check_door();
+  memset(key_buffer, '\0', BUFFER_SIZE);
 
   HAL_GPIO_WritePin(ROW_1_GPIO_Port, ROW_1_Pin, 1);
   HAL_GPIO_WritePin(ROW_2_GPIO_Port, ROW_2_Pin, 1);
@@ -520,6 +522,10 @@ int main(void)
   HAL_UART_Receive_IT(&huart1, &uart1_rx_buffer, 1);
   HAL_UART_Receive_IT(&huart3, &uart3_rx_buffer, 1);
 
+  /* USER CODE END 2 */
+
+  /* Infinite loop */
+  /* USER CODE BEGIN WHILE */
   while (1)
   {
 	  check_timeout_gsm();

@@ -60,6 +60,8 @@ void reset_buffer();
 /* Private defines -----------------------------------------------------------*/
 #define USER_BUTTON_Pin GPIO_PIN_13
 #define USER_BUTTON_GPIO_Port GPIOC
+#define SERVO_0_Pin GPIO_PIN_0
+#define SERVO_0_GPIO_Port GPIOA
 #define MAG_SWITCH_Pin GPIO_PIN_11
 #define MAG_SWITCH_GPIO_Port GPIOB
 #define COL_1_Pin GPIO_PIN_12
@@ -82,6 +84,8 @@ void reset_buffer();
 #define ROW_3_GPIO_Port GPIOC
 #define ROW_4_Pin GPIO_PIN_9
 #define ROW_4_GPIO_Port GPIOC
+#define MODEM_ENABLE_Pin GPIO_PIN_5
+#define MODEM_ENABLE_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
