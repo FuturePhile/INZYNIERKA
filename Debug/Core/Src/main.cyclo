@@ -13,5 +13,5 @@
 ../Core/Src/main.c:449:6:reset_buffer	1
 ../Core/Src/main.c:455:6:delay	2
 ../Core/Src/main.c:468:5:main	1
-../Core/Src/main.c:550:6:SystemClock_Config	4
-../Core/Src/main.c:614:6:Error_Handler	1
+../Core/Src/main.c:548:6:SystemClock_Config	4
+../Core/Src/main.c:612:6:Error_Handler	1

@@ -144,8 +144,8 @@ int lcd_number = LCD_1;
 
 void lcd_display(bool current_state_telephone, bool current_state_key, char *key_buffer, char *access_key, char pressed_button, char *ble_cmd)
 {
-	static char *door_open = "Dzwi otwarte";
-	static char *door_closed = "Dzwi zamkniete";
+	static char *door_open = "Zamek otwarty";
+	static char *door_closed = "Zamek zamkniety";
 	static char *telephone_not_set = "Wprowadz nr. tel.";
 	static char *telephone_set = "Wpisz kod: ";
 	static char *key_good = "Klucz poprawny";
@@ -155,6 +155,7 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 	static char *unlock = "Odblokuj";
 	static char *lock = "Zablokuj";
 	static char *reset = "Zresetuj";
+//	static char *close_door = "Zamknij drzwi";
 	static char *clear_line = "                ";
 
 	static bool if_key_correct = false;
@@ -163,7 +164,7 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 	static bool cmd_2 = false;
 	static bool cmd_3 = false;
 
-//	if(HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin) == GPIO_PIN_RESET)
+
 	if(current_state_telephone != previous_state_telephone)
 	{
 		if(current_state_telephone == false)
@@ -175,6 +176,8 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		}
 		previous_state_telephone = current_state_telephone;
 	}
+
+
 
 	if(strlen(key_buffer) == 4)
 	{
@@ -357,8 +360,6 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		break;
 	case RST:
 		NVIC_SystemReset();
-		break;
-	case DOOR:
 		break;
 	default:
 		break;

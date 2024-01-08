@@ -509,7 +509,6 @@ int main(void)
 
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1600);
-//  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
 
   memset(key_buffer, '\0', BUFFER_SIZE);
 
