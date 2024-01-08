@@ -9,6 +9,7 @@
 #include <string.h>
 #include "HD44780.h"
 #include "i2c.h"
+#include "main.h"
 
 #define I2C_ADDR 0x27
 
@@ -25,11 +26,12 @@
 
 #define TIMEOUT 100
 
+#define delay_second 16000000
+
 static uint8_t backlight_state = 1;
 
-static GPIO_PinState previous_state = GPIO_PIN_RESET;
 static bool previous_state_telephone = true;
-//static bool previous_state_key = false;
+static bool can_enter_key = false;
 
 static void lcd_write_nibble(uint8_t nibble, uint8_t rs)
 {
@@ -123,74 +125,249 @@ void lcd_backlight(uint8_t state)
 	}
 }
 
-void init_lcd_check_door(void)
-{
-	GPIO_PinState current_state = HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin);
-	if(current_state == GPIO_PIN_SET)
-	{
-		previous_state = GPIO_PIN_RESET;
-	} else
-	{
-		previous_state = GPIO_PIN_SET;
-	}
-}
+typedef enum{
+	LCD_1,
+	LCD_2,
+	LCD_3,
+	LCD_4,
+	LCD_5,
+	LCD_6,
+	LCD_7,
+	LCD_8,
+	RST,
+	DONE
+}lcd_state;
 
-void lcd_check_door(void)
+int lcd_number = LCD_1;
+
+void lcd_display(bool current_state_telephone, bool current_state_key, char *key_buffer, char *access_key, char pressed_button, char *ble_cmd)
 {
 	static char *door_open = "Dzwi otwarte";
-	static char *door_close = "Dzwi zamkniete";
-	static char *clear = "                ";
-
-	GPIO_PinState current_state = HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin);
-
-	if(current_state != previous_state)
-	{
-		if(current_state == GPIO_PIN_RESET)
-		{
-			lcd_set_cursor(0, 0);
-			lcd_write_string(clear);
-			lcd_set_cursor(0, 0);
-			lcd_write_string(door_close);
-		} else
-		{
-			lcd_set_cursor(0, 0);
-			lcd_write_string(clear);
-			lcd_set_cursor(0, 0);
-			lcd_write_string(door_open);
-		}
-		previous_state = current_state;
-	}
-}
-
-void lcd_check_telephone(bool current_state_telephone)
-{
-	static char *telephone_not_set = "Wyslij nr. tel.";
+	static char *door_closed = "Dzwi zamkniete";
+	static char *telephone_not_set = "Wprowadz nr. tel.";
 	static char *telephone_set = "Wpisz kod: ";
-	static char *clear = "                ";
+	static char *key_good = "Klucz poprawny";
+	static char *key_bad = "Zly klucz";
+	static char *message_1 = "Nacisnij A po  ";
+	static char *message_2 = "odebraniu paczki";
+	static char *unlock = "Odblokuj";
+	static char *lock = "Zablokuj";
+	static char *reset = "Zresetuj";
+	static char *clear_line = "                ";
+//	static char *clear_key = "    ";
+
+	static bool if_key_correct = false;
+	static bool if_key_entered = false;
+	static bool cmd_1 = false;
+	static bool cmd_2 = false;
+	static bool cmd_3 = false;
+
 
 	if(current_state_telephone != previous_state_telephone)
 	{
 		if(current_state_telephone == false)
 		{
-			lcd_set_cursor(1, 0);
-			lcd_write_string(clear);
-			lcd_set_cursor(1, 0);
-			lcd_write_string(telephone_not_set);
-		} else
+			lcd_number = LCD_1;
+		}else if(current_state_telephone == true)
 		{
-			lcd_set_cursor(1, 0);
-			lcd_write_string(clear);
-			lcd_set_cursor(1, 0);
-			lcd_write_string(telephone_set);
+			lcd_number = LCD_2;
 		}
 		previous_state_telephone = current_state_telephone;
 	}
+
+	if(strlen(key_buffer) == 4)
+	{
+		if_key_entered = true;
+		if(strcmp(key_buffer, access_key) == 0)
+		{
+			if_key_correct = true;
+		}
+	}
+
+	if(if_key_entered == true)
+	{
+		if(if_key_correct == true)
+		{
+			lcd_number = LCD_4;
+		} else
+		{
+			lcd_number = LCD_3;
+		}
+		if_key_entered = false;
+	}
+
+	if(pressed_button == 'A' && if_key_correct == true)
+	{
+		lcd_number = LCD_6;
+		if_key_correct = false;
+	}
+
+	if(strcmp(ble_cmd, "open") == 0)
+	{
+		if(cmd_1 == true)
+		{
+			lcd_number = LCD_7;
+			cmd_1 = false;
+		}
+	}
+	if(strcmp(ble_cmd, "close") == 0)
+	{
+		if(cmd_2 == true)
+		{
+			lcd_number = LCD_8;
+			cmd_2 = false;
+		}
+	}
+	if(strcmp(ble_cmd, "reset") == 0)
+	{
+		if(cmd_3 == true)
+		{
+			lcd_number = RST;
+			cmd_3 = false;
+		}
+	}
+
+
+	switch(lcd_number)
+	{
+	case LCD_1:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(door_open);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(telephone_not_set);
+
+		lcd_number = DONE;
+		break;
+	case LCD_2:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(door_closed);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(telephone_set);
+
+		can_enter_key = true;
+
+		lcd_number = DONE;
+		break;
+	case LCD_3:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(door_closed);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(key_bad);
+
+		can_enter_key = false;
+
+		reset_buffer();
+
+		delay(delay_second*2);
+
+		lcd_number = LCD_2;
+		break;
+	case LCD_4:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(door_open);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(key_good);
+
+		can_enter_key = false;
+
+		reset_buffer();
+
+		delay(delay_second*2);
+
+		lcd_number = LCD_5;
+		break;
+	case LCD_5:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(message_1);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(message_2);
+
+		lcd_number = DONE;
+		break;
+	case LCD_6:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(door_closed);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(unlock);
+
+		cmd_1 = true;
+
+		lcd_number = DONE;
+		break;
+	case LCD_7:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(door_open);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(lock);
+
+		cmd_2 = true;
+
+		lcd_number = DONE;
+		break;
+	case LCD_8:
+		lcd_set_cursor(0, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(0, 0);
+		lcd_write_string(door_closed);
+
+		lcd_set_cursor(1, 0);
+		lcd_write_string(clear_line);
+		lcd_set_cursor(1, 0);
+		lcd_write_string(reset);
+
+		cmd_3 = true;
+
+		lcd_number = DONE;
+		break;
+	case RST:
+		NVIC_SystemReset();
+		break;
+	default:
+		break;
+	}
+
 }
+
 bool lcd_display_key(char *key_buffer, bool current_state_key)
 {
 	static char *clear = "     ";
 
-	if(current_state_key == true)
+	if(current_state_key == true && can_enter_key == true)
 	{
 		lcd_set_cursor(1,11);
 		lcd_write_string(clear);
@@ -199,28 +376,4 @@ bool lcd_display_key(char *key_buffer, bool current_state_key)
 		current_state_key = false;
 	}
 	return current_state_key;
-}
-
-void lcd_check_key(char *key_buffer, char *access_key)
-{
-	static char *clear = "                ";
-	static char *good = "Klucz poprawny";
-	static char *bad = "Zly klucz";
-
-	if(strlen(key_buffer) == 4)
-	{
-		if(strcmp(key_buffer, access_key) == 0)
-			{
-				lcd_set_cursor(1, 0);
-				lcd_write_string(clear);
-				lcd_set_cursor(1, 0);
-				lcd_write_string(good);
-			} else
-			{
-				lcd_set_cursor(1, 0);
-				lcd_write_string(clear);
-				lcd_set_cursor(1, 0);
-				lcd_write_string(bad);
-			}
-	}
 }

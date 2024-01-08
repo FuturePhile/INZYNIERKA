@@ -65,6 +65,7 @@ void SystemClock_Config(void);
 #define PREFIX_LENGTH 5
 #define TIMEOUT_MS 50
 #define BUFFER_SIZE 5
+#define delay_second 16000000
 
 static char line_buffer_debug[LINE_MAX_LENGTH + 1];
 static char line_buffer_debug_GSM[LINE_MAX_LENGTH + 1];
@@ -91,6 +92,7 @@ uint32_t last_command_time = 0;
 char phone_number[10];
 char access_key[5];
 char key_buffer[5];
+char open_close_cmd[7];
 
 void send_SMS(void);
 void delay(uint32_t iterations);
@@ -159,7 +161,18 @@ void line_append_bluetooth(uint8_t value)
 
 			send_SMS();
 		}
-	} else
+	} else if(value == '*')
+	{
+		if(line_lenght_bluetooth > 0)
+		{
+			line_buffer_bluetooth[line_lenght_bluetooth] = '\0';
+			if_send_end_line = true;
+			strcpy(open_close_cmd, line_buffer_bluetooth);
+			HAL_UART_Transmit_IT(&huart2, (uint8_t*)line_buffer_bluetooth, strlen(line_buffer_bluetooth));
+			line_lenght_bluetooth = 0;
+		}
+
+	}else
 	{
 		if(line_lenght_bluetooth >= LINE_MAX_LENGTH)
 		{
@@ -186,7 +199,6 @@ void check_timeout_gsm(void)
 	if(line_lenght_gsm > 0 && (HAL_GetTick() - last_byte_time > TIMEOUT_MS))
 	{
 		line_buffer_gsm[line_lenght_gsm] = '\0';
-//		if_send_end_line = true;
 		HAL_UART_Transmit_IT(&huart2, (uint8_t*)line_buffer_gsm, strlen(line_buffer_gsm));
 		line_lenght_gsm = 0;
 	}
@@ -497,7 +509,7 @@ int main(void)
 
   memset(key_buffer, '\0', BUFFER_SIZE);
 
-  init_lcd_check_door();
+//  init_lcd_check_door();
 
   HAL_GPIO_WritePin(ROW_1_GPIO_Port, ROW_1_Pin, 1);
   HAL_GPIO_WritePin(ROW_2_GPIO_Port, ROW_2_Pin, 1);
@@ -511,14 +523,12 @@ int main(void)
   while (1)
   {
 	  check_timeout_gsm();
-	  lcd_check_door();
-	  lcd_check_telephone(if_phone_number_set_latch);
+	  lcd_display(if_phone_number_set_latch, if_key_pressed, key_buffer, access_key, pressed_key, open_close_cmd);
 	  if_key_pressed = lcd_display_key(key_buffer, if_key_pressed);
-	  lcd_check_key(key_buffer, access_key);
-	  if(HAL_GPIO_ReadPin(USER_BUTTON_GPIO_Port, USER_BUTTON_Pin) == GPIO_PIN_RESET)
-	  {
-		  reset_buffer();
-	  }
+//	  if(pressed_key == 'D')
+//	  {
+//		  reset_buffer();
+//	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
