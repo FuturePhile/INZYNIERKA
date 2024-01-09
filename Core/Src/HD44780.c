@@ -136,11 +136,18 @@ typedef enum{
 	LCD_7,
 	LCD_8,
 	RST,
-	DOOR,
 	DONE
 }lcd_state;
 
+typedef enum{
+	BACK_2,
+	BACK_6,
+	BACK_8,
+	NO_BACK
+}door_state;
+
 int lcd_number = LCD_1;
+int back_condition = NO_BACK;
 
 void lcd_display(bool current_state_telephone, bool current_state_key, char *key_buffer, char *access_key, char pressed_button, char *ble_cmd)
 {
@@ -155,7 +162,7 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 	static char *unlock = "Odblokuj";
 	static char *lock = "Zablokuj";
 	static char *reset = "Zresetuj";
-//	static char *close_door = "Zamknij drzwi";
+	static char *close_door = "Zamknij drzwi";
 	static char *clear_line = "                ";
 
 	static bool if_key_correct = false;
@@ -163,6 +170,29 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 	static bool cmd_1 = false;
 	static bool cmd_2 = false;
 	static bool cmd_3 = false;
+
+	if(HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin) == GPIO_PIN_RESET)
+	{
+		delay(delay_second*2);
+
+		switch(back_condition)
+		{
+		case BACK_2:
+			lcd_number = LCD_2;
+			back_condition = NO_BACK;
+			break;
+		case BACK_6:
+			lcd_number = LCD_6;
+			back_condition = NO_BACK;
+			break;
+		case BACK_8:
+			lcd_number = LCD_8;
+			back_condition = NO_BACK;
+			break;
+		default:
+			break;
+		}
+	}
 
 
 	if(current_state_telephone != previous_state_telephone)
@@ -176,8 +206,6 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		}
 		previous_state_telephone = current_state_telephone;
 	}
-
-
 
 	if(strlen(key_buffer) == 4)
 	{
@@ -248,17 +276,28 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		lcd_number = DONE;
 		break;
 	case LCD_2:
-		lcd_set_cursor(0, 0);
-		lcd_write_string(clear_line);
-		lcd_set_cursor(0, 0);
-		lcd_write_string(door_closed);
+		if(HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin) == GPIO_PIN_SET)
+		{
+			lcd_clear();
+			lcd_set_cursor(0, 0);
+			lcd_write_string(close_door);
+			back_condition = BACK_2;
+		} else
+		{
+			lcd_set_cursor(0, 0);
+			lcd_write_string(clear_line);
+			lcd_set_cursor(0, 0);
+			lcd_write_string(door_closed);
 
-		lcd_set_cursor(1, 0);
-		lcd_write_string(clear_line);
-		lcd_set_cursor(1, 0);
-		lcd_write_string(telephone_set);
+			lcd_set_cursor(1, 0);
+			lcd_write_string(clear_line);
+			lcd_set_cursor(1, 0);
+			lcd_write_string(telephone_set);
 
-		can_enter_key = true;
+			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
+
+			can_enter_key = true;
+		}
 
 		lcd_number = DONE;
 		break;
@@ -292,6 +331,8 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		lcd_set_cursor(1, 0);
 		lcd_write_string(key_good);
 
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1600);
+
 		can_enter_key = false;
 
 		reset_buffer();
@@ -314,17 +355,28 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		lcd_number = DONE;
 		break;
 	case LCD_6:
-		lcd_set_cursor(0, 0);
-		lcd_write_string(clear_line);
-		lcd_set_cursor(0, 0);
-		lcd_write_string(door_closed);
+		if(HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin) == GPIO_PIN_SET)
+		{
+			lcd_clear();
+			lcd_set_cursor(0, 0);
+			lcd_write_string(close_door);
+			back_condition = BACK_6;
+		} else
+		{
+			lcd_set_cursor(0, 0);
+			lcd_write_string(clear_line);
+			lcd_set_cursor(0, 0);
+			lcd_write_string(door_closed);
 
-		lcd_set_cursor(1, 0);
-		lcd_write_string(clear_line);
-		lcd_set_cursor(1, 0);
-		lcd_write_string(unlock);
+			lcd_set_cursor(1, 0);
+			lcd_write_string(clear_line);
+			lcd_set_cursor(1, 0);
+			lcd_write_string(unlock);
 
-		cmd_1 = true;
+			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
+
+			cmd_1 = true;
+		}
 
 		lcd_number = DONE;
 		break;
@@ -339,26 +391,40 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 		lcd_set_cursor(1, 0);
 		lcd_write_string(lock);
 
+		__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 1600);
+
 		cmd_2 = true;
 
 		lcd_number = DONE;
 		break;
 	case LCD_8:
-		lcd_set_cursor(0, 0);
-		lcd_write_string(clear_line);
-		lcd_set_cursor(0, 0);
-		lcd_write_string(door_closed);
+		if(HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin) == GPIO_PIN_SET)
+		{
+			lcd_clear();
+			lcd_set_cursor(0, 0);
+			lcd_write_string(close_door);
+			back_condition = BACK_8;
+		} else
+		{
+			lcd_set_cursor(0, 0);
+			lcd_write_string(clear_line);
+			lcd_set_cursor(0, 0);
+			lcd_write_string(door_closed);
 
-		lcd_set_cursor(1, 0);
-		lcd_write_string(clear_line);
-		lcd_set_cursor(1, 0);
-		lcd_write_string(reset);
+			lcd_set_cursor(1, 0);
+			lcd_write_string(clear_line);
+			lcd_set_cursor(1, 0);
+			lcd_write_string(reset);
 
-		cmd_3 = true;
+			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
+
+			cmd_3 = true;
+		}
 
 		lcd_number = DONE;
 		break;
 	case RST:
+		delay(delay_second*2);
 		NVIC_SystemReset();
 		break;
 	default:
