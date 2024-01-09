@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
+#include "iwdg.h"
 #include "rng.h"
 #include "rtc.h"
 #include "tim.h"
@@ -496,6 +497,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_I2C1_Init();
   MX_TIM2_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 
   HAL_GPIO_WritePin(MODEM_ENABLE_GPIO_Port, MODEM_ENABLE_Pin, GPIO_PIN_SET);
@@ -528,12 +530,17 @@ int main(void)
   while (1)
   {
 	  check_timeout_gsm();
+
 	  lcd_display(if_phone_number_set_latch, if_key_pressed, key_buffer, access_key, pressed_key, open_close_cmd);
+
 	  if_key_pressed = lcd_display_key(key_buffer, if_key_pressed);
-//	  if(pressed_key == 'D')
-//	  {
-//		  reset_buffer();
-//	  }
+
+	  if(pressed_key == 'D')
+	  {
+		  reset_buffer();
+	  }
+
+	  HAL_IWDG_Refresh(&hiwdg);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -565,8 +572,10 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE|RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_LSE
+                              |RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
   RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_6;

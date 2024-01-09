@@ -8,4 +8,4 @@
 ../Core/Src/HD44780.c:112:6:lcd_clear	1
 ../Core/Src/HD44780.c:118:6:lcd_backlight	2
 ../Core/Src/HD44780.c:152:6:lcd_display	32
-../Core/Src/HD44780.c:436:6:lcd_display_key	3
+../Core/Src/HD44780.c:440:6:lcd_display_key	3

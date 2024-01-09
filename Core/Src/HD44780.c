@@ -173,8 +173,6 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 
 	if(HAL_GPIO_ReadPin(MAG_SWITCH_GPIO_Port, MAG_SWITCH_Pin) == GPIO_PIN_RESET)
 	{
-		delay(delay_second*2);
-
 		switch(back_condition)
 		{
 		case BACK_2:
@@ -294,6 +292,8 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 			lcd_set_cursor(1, 0);
 			lcd_write_string(telephone_set);
 
+			delay(delay_second*2);
+
 			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
 
 			can_enter_key = true;
@@ -373,6 +373,8 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 			lcd_set_cursor(1, 0);
 			lcd_write_string(unlock);
 
+			delay(delay_second*2);
+
 			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
 
 			cmd_1 = true;
@@ -415,6 +417,8 @@ void lcd_display(bool current_state_telephone, bool current_state_key, char *key
 			lcd_write_string(clear_line);
 			lcd_set_cursor(1, 0);
 			lcd_write_string(reset);
+
+			delay(delay_second*2);
 
 			__HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 650);
 
